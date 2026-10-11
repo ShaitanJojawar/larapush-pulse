@@ -1,0 +1,22 @@
+{
+  "name": "push-notification-saas",
+  "version": "1.0.0",
+  "description": "Complete Push Notification SaaS like OneSignal using Firebase Cloud Messaging (FCM)",
+  "scripts": {
+    "start": "node server/server.js",
+    "server": "node server/server.js",
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix server install && npm --prefix client install && npm --prefix client run build"
+  },
+  "keywords": [
+    "push-notifications",
+    "fcm",
+    "onesignal-clone",
+    "firebase-admin",
+    "firebase-firestore",
+    "react",
+    "tailwind"
+  ],
+  "author": "PushPulse",
+  "license": "MIT"
+}

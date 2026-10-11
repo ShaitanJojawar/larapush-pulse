@@ -1,0 +1,62 @@
+[
+  {
+    "id": "shaitan-jojawar",
+    "name": "Shaitan Jojawar",
+    "type": "youtube",
+    "identifier": "https://www.youtube.com/channel/UCOem0dV7fkr2pB2TEQhkaZA",
+    "logo": "",
+    "createdAt": "2026-10-10T23:08:16.779Z"
+  },
+  {
+    "id": "rajasthani-song-point",
+    "name": "RAJASTHANI SONG POINT",
+    "type": "website",
+    "identifier": "https://rajasthanisongpoint.blogspot.com",
+    "logo": "",
+    "createdAt": "2026-10-10T22:06:51.282Z"
+  },
+  {
+    "id": "rajasthani-dhun",
+    "name": "Rajasthani Dhun",
+    "type": "website",
+    "identifier": "https://rajasthanidhun.blogspot.com",
+    "logo": "",
+    "createdAt": "2026-10-10T22:05:03.557Z"
+  },
+  {
+    "_id": "proj_ss_banna",
+    "project_id": "ss-banna-jojawar",
+    "project_name": "SS Banna Jojawar",
+    "type": "youtube",
+    "identifier": "https://www.youtube.com/@ssbannajojawar",
+    "logo": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80",
+    "description": "Official YouTube Channel - Music, Culture & Updates",
+    "status": "active",
+    "createdAt": "2026-10-10T20:36:04.897Z",
+    "updatedAt": "2026-10-10T20:36:04.897Z"
+  },
+  {
+    "_id": "proj_main_web",
+    "project_id": "main-website",
+    "project_name": "Main Portal Website",
+    "type": "website",
+    "identifier": "https://ssbanna.com",
+    "logo": "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=200&q=80",
+    "description": "Official Web Publication & News Portal",
+    "status": "active",
+    "createdAt": "2026-10-10T20:36:04.897Z",
+    "updatedAt": "2026-10-10T20:36:04.897Z"
+  },
+  {
+    "_id": "id_1791664596973_iovi4e2",
+    "project_id": "rajasthani-folk-beats",
+    "project_name": "Rajasthani Folk Beats",
+    "type": "youtube",
+    "identifier": "https://youtube.com/@rajasthanifolk",
+    "logo": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=200&q=80",
+    "description": "Traditional Folk Songs Channel",
+    "status": "active",
+    "createdAt": "2026-10-10T20:36:36.973Z",
+    "updatedAt": "2026-10-10T20:36:36.973Z"
+  }
+]
