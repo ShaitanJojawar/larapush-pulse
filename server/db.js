@@ -79,57 +79,7 @@ const defaultOptinSettings = {
   delaySeconds: 3
 };
 
-// Pre-seed default projects if empty
-if (localProjects.read().length === 0) {
-  localProjects.write([
-    {
-      id: 'ss-banna-jojawar',
-      name: 'SS Banna Jojawar',
-      type: 'youtube',
-      identifier: 'https://www.youtube.com/@ssbannajojawar',
-      logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80',
-      optinSettings: {
-        ...defaultOptinSettings,
-        bellColor: '#ef4444',
-        modalTitle: '🔴 SS Banna Jojawar Alerts',
-        modalBody: 'Subscribe now to get notified immediately when our new songs & videos premiere!',
-        allowText: 'Subscribe Now'
-      },
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'main-website',
-      name: 'Main Website Portal',
-      type: 'website',
-      identifier: 'https://ssbanna.com',
-      logo: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=200&q=80',
-      optinSettings: {
-        ...defaultOptinSettings,
-        bellColor: '#6366f1'
-      },
-      createdAt: new Date().toISOString()
-    }
-  ]);
-}
-
-// Pre-seed sample automation if empty
-if (localAutomations.read().length === 0) {
-  localAutomations.write([
-    {
-      id: 'auto-ss-banna-yt',
-      name: 'YouTube Channel Auto Push',
-      projectId: 'ss-banna-jojawar',
-      projectName: 'SS Banna Jojawar',
-      rssUrl: 'https://www.youtube.com/feeds/videos.xml?channel_id=UC_example',
-      intervalMinutes: 15,
-      active: true,
-      lastChecked: new Date().toISOString(),
-      lastPostGuid: '',
-      createdAt: new Date().toISOString(),
-      totalPushed: 0
-    }
-  ]);
-}
+// Default projects and automations start completely clean - user adds their own projects.
 
 /**
  * Pure Firebase Firestore Database Adapter with Local JSON Resilience
@@ -332,7 +282,9 @@ const firestoreDB = {
 
     const record = {
       id: cleanId,
+      project_id: cleanId,
       name: name.trim(),
+      project_name: name.trim(),
       type: ['youtube', 'website'].includes(type) ? type : 'website',
       identifier: identifier.trim(),
       logo: logo.trim(),
@@ -387,7 +339,7 @@ const firestoreDB = {
       } catch (err) { }
     }
 
-    const list = localProjects.read().filter(p => p.id !== id && p.project_id !== id);
+    const list = localProjects.read().filter(p => p.id !== id && p.project_id !== id && p._id !== id);
     localProjects.write(list);
     invalidateCache('projects');
     return { success: true };
@@ -680,11 +632,11 @@ const firestoreDB = {
       } catch (err) { }
     }
 
-    return {
-      all_users: 1250000,
-      'project_ss-banna-jojawar': 850400,
-      'project_main-website': 399600
-    };
+    const local = localTopics.read();
+    if (local && typeof local === 'object' && !Array.isArray(local)) {
+      return local;
+    }
+    return {};
   },
 
   async incrementTopic(topicName) {

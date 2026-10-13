@@ -118,6 +118,14 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
+// Real-time local / SSE bridge message handler
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    event.waitUntil(self.registration.showNotification(title || 'New Notification', options || {}));
+  }
+});
+
 // Handle Notification Click & Action Buttons with Real-time CTR Tracking
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

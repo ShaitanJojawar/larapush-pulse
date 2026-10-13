@@ -25,8 +25,6 @@ const dataService = {
     const targetTopics = ['all_users'];
     if (projectId && projectId !== 'all') {
       targetTopics.push(formatTopicName(projectId));
-    } else {
-      targetTopics.push('project_ss-banna-jojawar');
     }
 
     // 1. Save subscriber in Firestore collection 'subscribers' with device deduplication
@@ -73,10 +71,10 @@ const dataService = {
     const allSubs = await firestoreDB.getSubscribers();
 
     return projects.map(p => {
-      const pId = p.id || p.project_id;
+      const pId = p.id || p.project_id || p._id;
       const topicName = formatTopicName(pId);
-      // count from topic or from subscriber list
-      const count = topicCounts[topicName] || allSubs.filter(s => s.projectId === pId).length || 0;
+      // count from real subscriber list
+      const count = allSubs.filter(s => s.projectId === pId || s.project_id === pId).length || (topicCounts && topicCounts[topicName]) || 0;
       return {
         id: pId,
         project_id: pId,

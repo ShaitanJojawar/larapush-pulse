@@ -5,7 +5,7 @@ export default function WordPressIntegration({ activeProject, projects }) {
   const [copied, setCopied] = useState(false);
 
   const serverUrl = window.location.origin;
-  const currentProjId = activeProject !== 'all' ? activeProject : (projects?.[0]?.project_id || projects?.[0]?.id || 'main-website');
+  const currentProjId = activeProject !== 'all' ? activeProject : (projects?.[0]?.project_id || projects?.[0]?.id || 'all');
 
   const snippet = `<!-- LaraPush Pulse Universal Web Push SDK -->
 <script src="${serverUrl}/push-sdk.js" async></script>

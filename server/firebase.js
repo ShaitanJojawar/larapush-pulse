@@ -10,29 +10,7 @@ let firestoreDb = null;
 let initError = null;
 
 function loadCredentials() {
-  // 1. Check server/serviceAccountKey.json
-  const localKeyPath = path.join(__dirname, 'serviceAccountKey.json');
-  if (fs.existsSync(localKeyPath)) {
-    try {
-      const content = fs.readFileSync(localKeyPath, 'utf8');
-      return JSON.parse(content);
-    } catch (e) {
-      console.warn('⚠️ Error parsing serviceAccountKey.json:', e.message);
-    }
-  }
-
-  // 2. Check root serviceAccountKey.json
-  const rootKeyPath = path.join(__dirname, '..', 'serviceAccountKey.json');
-  if (fs.existsSync(rootKeyPath)) {
-    try {
-      const content = fs.readFileSync(rootKeyPath, 'utf8');
-      return JSON.parse(content);
-    } catch (e) {
-      console.warn('⚠️ Error parsing root serviceAccountKey.json:', e.message);
-    }
-  }
-
-  // 3. Check FIREBASE_SERVICE_ACCOUNT env var
+  // 1. Highest Priority: FIREBASE_SERVICE_ACCOUNT env var (Secure for Render / Cloud deployment)
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
       let raw = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
@@ -44,6 +22,42 @@ function loadCredentials() {
     } catch (e) {
       console.warn('⚠️ Error parsing FIREBASE_SERVICE_ACCOUNT env var:', e.message);
     }
+  }
+
+  // 2. Check server/serviceAccountKey.json (Local file)
+  const localKeyPath = path.join(__dirname, 'serviceAccountKey.json');
+  if (fs.existsSync(localKeyPath)) {
+    try {
+      const content = fs.readFileSync(localKeyPath, 'utf8');
+      return JSON.parse(content);
+    } catch (e) {
+      console.warn('⚠️ Error parsing serviceAccountKey.json:', e.message);
+    }
+  }
+
+  // 3. Check root serviceAccountKey.json
+  const rootKeyPath = path.join(__dirname, '..', 'serviceAccountKey.json');
+  if (fs.existsSync(rootKeyPath)) {
+    try {
+      const content = fs.readFileSync(rootKeyPath, 'utf8');
+      return JSON.parse(content);
+    } catch (e) {
+      console.warn('⚠️ Error parsing root serviceAccountKey.json:', e.message);
+    }
+  }
+
+  // 4. Check for any *-adminsdk-*.json in root or server
+  const checkDirs = [__dirname, path.join(__dirname, '..')];
+  for (const dir of checkDirs) {
+    try {
+      const files = fs.readdirSync(dir);
+      const sdkFile = files.find(f => f.includes('firebase-adminsdk') && f.endsWith('.json'));
+      if (sdkFile) {
+        const fullPath = path.join(dir, sdkFile);
+        const content = fs.readFileSync(fullPath, 'utf8');
+        return JSON.parse(content);
+      }
+    } catch (e) { }
   }
 
   // 4. Check individual env vars
@@ -306,6 +320,85 @@ async function sendTopicNotification(topic, payload, condition = null) {
   }
 }
 
+/**
+ * Direct Targeted Push Notification to Specific Registration Tokens
+ */
+async function sendDirectNotification(tokens, payload) {
+  if (!tokens || (Array.isArray(tokens) && tokens.length === 0)) {
+    return { success: false, error: 'No tokens provided' };
+  }
+  const tokenList = Array.isArray(tokens) ? tokens : [tokens];
+  const {
+    title,
+    body,
+    imageUrl,
+    iconUrl,
+    badgeUrl,
+    clickUrl,
+    campaignId = ''
+  } = payload;
+
+  const existingApps = admin.getApps ? admin.getApps() : (admin.apps || []);
+  const isConfigured = existingApps.length > 0;
+
+  if (!isConfigured) {
+    return {
+      success: true,
+      mode: 'simulated',
+      count: tokenList.length,
+      note: 'Simulation mode: direct push delivered'
+    };
+  }
+
+  const messaging = getMessaging(existingApps[0]);
+  const results = [];
+
+  for (const token of tokenList) {
+    try {
+      const message = {
+        token,
+        notification: {
+          title: title || 'Push Notification',
+          body: body || '',
+          ...(imageUrl ? { imageUrl } : {})
+        },
+        data: {
+          title: title || '',
+          body: body || '',
+          imageUrl: imageUrl || '',
+          clickUrl: clickUrl || '',
+          campaignId: campaignId || '',
+          timestamp: String(Date.now())
+        },
+        webpush: {
+          notification: {
+            title: title || '',
+            body: body || '',
+            icon: iconUrl || '/icon-192.png',
+            badge: badgeUrl || '/badge-72.png',
+            ...(imageUrl ? { image: imageUrl } : {})
+          },
+          fcmOptions: {
+            link: clickUrl || ''
+          }
+        }
+      };
+
+      const msgId = await messaging.send(message);
+      results.push({ token, success: true, messageId: msgId });
+    } catch (err) {
+      console.warn(`[Direct Push Notice for ${token.substring(0, 15)}...]:`, err.message);
+      results.push({ token, success: false, error: err.message });
+    }
+  }
+
+  return {
+    success: true,
+    totalTargeted: tokenList.length,
+    results
+  };
+}
+
 module.exports = {
   admin,
   initFirebase,
@@ -313,5 +406,6 @@ module.exports = {
   formatTopicName,
   subscribeTokenToTopics,
   sendTopicNotification,
+  sendDirectNotification,
   getFirestore: () => firestoreDb
 };

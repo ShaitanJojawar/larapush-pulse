@@ -6,12 +6,56 @@ const rssService = require('../services/rssService');
 const {
   formatTopicName,
   sendTopicNotification,
+  sendDirectNotification,
   initFirebase,
   getFirebaseStatus
 } = require('../firebase');
 const { parseYouTubeUrl } = require('../utils/youtube');
 const fs = require('fs');
 const path = require('path');
+
+// Live SSE Clients for real-time instant desktop notifications
+const liveClients = new Set();
+
+function broadcastToLiveClients(payload) {
+  const dataString = `data: ${JSON.stringify(payload)}\n\n`;
+  for (const client of liveClients) {
+    try {
+      if (payload.specificTokens && Array.isArray(payload.specificTokens) && payload.specificTokens.length > 0) {
+        if (!client.token || !payload.specificTokens.includes(client.token)) {
+          continue;
+        }
+      }
+      client.res.write(dataString);
+    } catch (e) {
+      liveClients.delete(client);
+    }
+  }
+}
+
+router.get('/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const clientInfo = {
+    res,
+    token: req.query.token || '',
+    projectId: req.query.projectId || 'all'
+  };
+  liveClients.add(clientInfo);
+
+  // Heartbeat every 25s
+  const pinger = setInterval(() => {
+    try { res.write(': heartbeat\n\n'); } catch (e) { clearInterval(pinger); }
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(pinger);
+    liveClients.delete(clientInfo);
+  });
+});
 
 // ================= 1. POST /api/subscribe =================
 const handleSubscribe = async (req, res) => {
@@ -179,6 +223,7 @@ router.post('/send', async (req, res) => {
       clickUrl,
       target = 'all',
       notificationType,
+      specificTokens,
       // LaraPush Action Buttons
       action1Title,
       action1Url,
@@ -269,30 +314,40 @@ router.post('/send', async (req, res) => {
       });
     }
 
-    // Immediate Broadcast: Single API call to Google FCM Topic
-    let topicCondition = null;
-    if (target && target !== 'all') {
-      topicCondition = `'${targetTopic}' in topics && 'platform_${target}' in topics`;
+    // Broadcast: either direct to specificTokens OR topic broadcast
+    let sendResult;
+    const notificationPayload = {
+      campaignId,
+      title: title.trim(),
+      body: body.trim(),
+      imageUrl: finalImageUrl,
+      iconUrl,
+      badgeUrl,
+      clickUrl: finalLink,
+      action1Title,
+      action1Url,
+      action2Title,
+      action2Url,
+      notificationType: notificationType || (ytDetails?.isYouTube ? 'video' : 'article')
+    };
+
+    if (specificTokens && Array.isArray(specificTokens) && specificTokens.length > 0) {
+      sendResult = await sendDirectNotification(specificTokens, notificationPayload);
+    } else {
+      let topicCondition = null;
+      if (target && target !== 'all') {
+        topicCondition = `'${targetTopic}' in topics && 'platform_${target}' in topics`;
+      }
+      sendResult = await sendTopicNotification(targetTopic, notificationPayload, topicCondition);
     }
 
-    const sendResult = await sendTopicNotification(
+    // Broadcast instant event to connected active browsers
+    broadcastToLiveClients({
+      ...notificationPayload,
+      projectId,
       targetTopic,
-      {
-        campaignId,
-        title: title.trim(),
-        body: body.trim(),
-        imageUrl: finalImageUrl,
-        iconUrl,
-        badgeUrl,
-        clickUrl: finalLink,
-        action1Title,
-        action1Url,
-        action2Title,
-        action2Url,
-        notificationType: notificationType || (ytDetails?.isYouTube ? 'video' : 'article')
-      },
-      topicCondition
-    );
+      specificTokens: (specificTokens && Array.isArray(specificTokens)) ? specificTokens : null
+    });
 
     // Save notification in Firestore / audit log
     const notificationRecord = await dataService.saveNotification({
@@ -312,14 +367,14 @@ router.post('/send', async (req, res) => {
       projectName,
       topic: targetTopic,
       target,
-      fcmMessageId: sendResult.messageId,
+      fcmMessageId: sendResult.messageId || (sendResult.results?.[0]?.messageId) || 'sent',
       status: 'sent'
     });
 
     return res.status(200).json({
       success: true,
-      message: `Broadcast delivered via FCM Topic: ${targetTopic}`,
-      fcmMessageId: sendResult.messageId,
+      message: specificTokens ? 'Delivered directly to targeted device token(s)' : `Broadcast delivered via FCM Topic: ${targetTopic}`,
+      fcmMessageId: sendResult.messageId || 'sent',
       targetTopic,
       notification: notificationRecord
     });

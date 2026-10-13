@@ -136,9 +136,10 @@
         this.renderFloatingBell(isSubscribed);
       }
 
-      // If already subscribed, return early
+      // If already subscribed, connect live notification listener and return
       if (isSubscribed) {
         this.currentToken = localStorage.getItem('push_device_token');
+        this.listenToEvents();
         return { success: true, subscribed: true, token: this.currentToken };
       }
 
@@ -381,6 +382,9 @@
           localStorage.setItem('push_subscribed_' + projectId, 'true');
           this.currentToken = localToken;
 
+          // Connect real-time event listener for instant push alerts
+          this.listenToEvents();
+
           // Update Bell UI
           const bellBtn = document.getElementById('larapush-bell-btn');
           if (bellBtn) {
@@ -401,6 +405,7 @@
         console.error('[PushSDK] Failed to save token:', err);
       }
 
+      this.listenToEvents();
       return {
         success: true,
         subscribed: true,
@@ -408,6 +413,64 @@
         permission: 'granted',
         token: localToken
       };
+    },
+
+    /**
+     * Connect real-time SSE stream for instant browser push delivery
+     */
+    listenToEvents: function () {
+      if (this._eventSource) return;
+      const token = this.currentToken || getPersistentLocalToken();
+      const proj = this.config.projectId || 'all';
+
+      try {
+        const url = `${this.config.apiUrl}/api/events?token=${encodeURIComponent(token)}&projectId=${encodeURIComponent(proj)}`;
+        const es = new EventSource(url);
+
+        es.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            this.displayNativeNotification(data);
+          } catch (e) { }
+        };
+
+        es.onerror = () => {
+          // auto-reconnects by default in browser EventSource
+        };
+
+        this._eventSource = es;
+        console.log('[PushSDK] Live push notification channel active');
+      } catch (e) { }
+    },
+
+    /**
+     * Display rich desktop notification on device
+     */
+    displayNativeNotification: function (data) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+      const title = data.title || 'LaraPush Pulse';
+      const clickUrl = data.clickUrl || (window.location.origin + '/');
+      const options = {
+        body: data.body || '',
+        icon: data.iconUrl || '/icon-192.png',
+        badge: data.badgeUrl || '/badge-72.png',
+        image: data.imageUrl || undefined,
+        data: { clickUrl }
+      };
+
+      // Try Service Worker showNotification first for full system drawer notification
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((reg) => {
+          reg.showNotification(title, options);
+        }).catch(() => {
+          const n = new Notification(title, options);
+          n.onclick = () => { window.focus(); window.location.href = clickUrl; };
+        });
+      } else {
+        const n = new Notification(title, options);
+        n.onclick = () => { window.focus(); window.location.href = clickUrl; };
+      }
     }
   };
 

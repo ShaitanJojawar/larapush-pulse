@@ -107,32 +107,36 @@ export default function NotificationComposer({ onNotificationSent, stats, projec
   const handleApplyPreset = (type) => {
     if (type === 'youtube') {
       const ytProj = (projects || []).find(p => p.type === 'youtube') || projects?.[0];
+      const pName = ytProj?.project_name || ytProj?.name || 'YouTube Channel';
+      const pId = ytProj?.project_id || ytProj?.id || 'all';
       setFormData(prev => ({
         ...prev,
-        title: `🔥 ${ytProj?.project_name || 'SS Banna Jojawar'} - New Song Premiere!`,
+        title: `🔥 ${pName} - New Video Premiere!`,
         body: 'Tap to watch the official video premiere on YouTube and join comments live!',
-        clickUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        imageUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+        clickUrl: ytProj?.identifier || 'https://www.youtube.com',
+        imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
         action1Title: '▶ Watch Video',
-        action1Url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        action1Url: ytProj?.identifier || 'https://www.youtube.com',
         action2Title: 'Share with Friends',
-        action2Url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        projectId: ytProj?.project_id || ytProj?.id || 'ss-banna-jojawar',
+        action2Url: ytProj?.identifier || 'https://www.youtube.com',
+        projectId: pId,
         notificationType: 'video'
       }));
     } else if (type === 'article') {
       const webProj = (projects || []).find(p => p.type === 'website') || projects?.[0];
+      const pName = webProj?.project_name || webProj?.name || 'Website';
+      const pId = webProj?.project_id || webProj?.id || 'all';
       setFormData(prev => ({
         ...prev,
-        title: '📰 Breaking Article: Latest Story & Updates',
+        title: `📰 Breaking: Latest Update from ${pName}`,
         body: 'Read our latest in-depth breakdown and exclusive insights on the portal.',
-        clickUrl: 'https://ssbanna.com/news/latest-update',
+        clickUrl: webProj?.identifier || 'https://example.com',
         imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
         action1Title: 'Read Article',
-        action1Url: 'https://ssbanna.com/news/latest-update',
+        action1Url: webProj?.identifier || 'https://example.com',
         action2Title: 'Explore More',
-        action2Url: 'https://ssbanna.com',
-        projectId: webProj?.project_id || webProj?.id || 'main-website',
+        action2Url: webProj?.identifier || 'https://example.com',
+        projectId: pId,
         notificationType: 'article'
       }));
     }

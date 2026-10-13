@@ -56,14 +56,14 @@ export default function SubscribersTable({ subscribers, projects, activeProject,
 
   const handleAddDemoSubscriber = async () => {
     const randomToken = `fcm_demo_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const targetProject = activeProject && activeProject !== 'all' ? activeProject : 'ss-banna-jojawar';
+    const targetProject = activeProject && activeProject !== 'all' ? activeProject : (projects?.[0]?.id || projects?.[0]?.project_id || 'all');
     const proj = (projects || []).find(p => (p.id || p.project_id) === targetProject);
 
     await api.subscribe({
       token: randomToken,
       projectId: targetProject,
-      projectName: proj?.name || proj?.project_name || 'SS Banna Jojawar',
-      type: proj?.type || 'youtube',
+      projectName: proj?.name || proj?.project_name || 'All Projects',
+      type: proj?.type || 'website',
       platform: 'web',
       createdAt: new Date().toISOString()
     });

@@ -1,16 +1,1 @@
-[
-  {
-    "id": "auto-ss-banna-yt",
-    "name": "YouTube Channel Auto Push",
-    "projectId": "ss-banna-jojawar",
-    "projectName": "SS Banna Jojawar",
-    "rssUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UC_example",
-    "intervalMinutes": 15,
-    "active": true,
-    "lastChecked": "2026-10-11T08:12:23.673Z",
-    "lastPostGuid": "",
-    "createdAt": "2026-10-11T07:15:38.340Z",
-    "totalPushed": 0,
-    "lastError": "Failed to fetch RSS feed (HTTP 404)"
-  }
-]
+[]
